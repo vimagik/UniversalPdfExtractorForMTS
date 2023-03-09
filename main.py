@@ -4,7 +4,7 @@ import csv
 from PyPDF2 import PdfReader
 
 
-PATTERN = r"([A-Z][()a-zA-Z\s\\\.\,\d-]+)([−|+][\d \,]+).+(\d{2}\.\d{2}\.\d{4})"
+PATTERN = r"([A-Z]+[\s\w>\\\-\.\,()]+)([−|+][\d \,]+)\D+(\d{2}\.\d{2}\.\d{4})"
 
 
 def extract_first_page(reader: PdfReader) -> str:
@@ -14,7 +14,9 @@ def extract_first_page(reader: PdfReader) -> str:
     start_table = text.find("Наименование операции Сумма Дата и время Статус") + \
         len("Наименование операции Сумма Дата и время Статус") + 1
     end_table = text.find("Последние операции по карте")
-    return text[start_table: end_table]
+    main_data = text[start_table: end_table]
+    clean_data = re.sub(r"^\s+|\n|\r|\s+$", " ", main_data)
+    return clean_data
 
 
 def extract_another_page(reader: PdfReader, page_number: int) -> str:
@@ -24,7 +26,9 @@ def extract_another_page(reader: PdfReader, page_number: int) -> str:
     end_table = text.find(
         "МТС Деньги – удобный сервис для быстрых переводов и платежей"
         ) - 1
-    return text[:end_table]
+    main_data = text[:end_table]
+    clean_data = re.sub(r"^\s+|\n|\r|\s+$", " ", main_data)
+    return clean_data
 
 
 def find_data(data: str) -> list:
@@ -32,7 +36,7 @@ def find_data(data: str) -> list:
     struct_data = []
     for row in re.findall(PATTERN, data):
         dict_row = {
-            "desc": re.sub(r"^\s+|\n|\r|\s+$", " ", row[0]),
+            "desc": row[0],
             "amount": row[1].replace(" ", "").replace("−", "-"),
             "date": row[2]
         }
